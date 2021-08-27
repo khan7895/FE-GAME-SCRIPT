@@ -1,0 +1,29 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class HealFlame : MonoBehaviour
+{
+    public TestJump S;
+    public LayerMask PlayerLayer;
+    public float OverLine;
+    public Transform FloatOn;
+
+    void Update()
+    { 
+        Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(FloatOn.position, OverLine,PlayerLayer);
+        foreach (Collider2D Enemy in hitOn1)
+        {
+            Enemy.GetComponent<TestJump>().PlayerCurrentHealth += 14 * Time.deltaTime;
+        }
+
+    }
+    public void OnDrawGizmosSelected()
+    {
+        {
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(FloatOn.position, OverLine);
+        }
+    }
+
+}
