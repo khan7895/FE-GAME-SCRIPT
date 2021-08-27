@@ -1,0 +1,1179 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+using UnityEngine.SceneManagement;
+public class TestFulx : MonoBehaviour
+{
+    public TestPlayer ForPlayerDamaged;
+    private Transform player;
+    public bool Action = false;
+    public Rigidbody2D Boss;
+    public float BossSpeed = 5;
+    public Transform FrontAttacker;
+    public bool Combat = false;
+    public float TrackRange = 0.5f;
+    public bool MegaDamaged = false;
+    public Transform CenterChange;
+    public Transform AboveOverHead;
+    public float AboveOverHeadRadius = 0.5f;
+    public bool Live = true;
+    public bool RushState = false;
+    public float CheckOnFlip = 1.0f;
+    public float BossCheckOn = 0f;
+    public int BossBehaviorRandom;
+    public float BossMaxHealth = 7000;
+    public float BossCurrentHealth;
+    public Transform NoCombatRushWall;
+    public float NOCombatRushWallRadius;
+    public LayerMask GroundWallLayer;
+    public LayerMask FloatWallLayer;
+    public bool Walled = false;
+    public int CombatCheckOn = 0;
+    public float BossCombatRandom;
+    public float BossSpecialAbility;
+    public int BossAbilityRandom;
+    public Transform AttackkerOnFront;
+    public float AttackerOnFrontRadius = 0.5f;
+    public Transform AttackerOnBack;
+    public float AttackerOnBackRadius = 0.5f;
+    public GameObject Firework;
+    public Transform InstantiateFirework1;
+    public Transform InstantiateFirework2;
+    public Transform InstantiateFirework3;
+    public Animator BossAnimator;
+    public float RushOnTime = 20;
+    public float DeathOnTime = 0;
+    public GameObject DamagedText;
+    public GameObject HealText;
+    public Transform TextOut;
+    public Transform InstantiateFinalBlast;
+    public Transform CutterInstantiatePoint1;
+    public Transform CutterInstantiatePoint2;
+    public Transform CutterInstantiatePoint3;
+    public GameObject Cutter1;
+    public GameObject Cutter2;
+    public GameObject Cutter3;
+    public GameObject FinalBlast;
+    public LayerMask PlayerLayer;
+    public Transform RushPoint;
+    public float RushPointRadius = 0.56f;
+    public Transform SpearDrop;
+    public GameObject Spear;
+    public bool stun = false;
+    public float Megacount = 0;
+    public AudioSource FulxAudio;
+    public static AudioClip Death, Roar, Damaged, Rush, Fin, Charge;
+    public Transform SpiralStrikePoint;
+    public float SpiralStrikeRange = 0.2f;
+    public bool GuardOn = false;
+    public GameObject DeathSign;
+    public float Shocked = 0;
+    public float Flamed = 0;
+    public float Poisoned = 0;
+    public float Iced = 0;
+    public GameObject FireStatus;
+    public GameObject ThunderStatus;
+    public GameObject PoisonStatus;
+    public GameObject IceStatus;
+    public GameObject RedCircleLine;
+    public GameObject Player;
+    
+
+    // Start is called before the first frame update............................................................................................................................
+    void Start()
+    {
+        Boss = GetComponent<Rigidbody2D>();
+        Action = false;
+        Combat = false;
+        Live = true;
+        RushState = false;
+        Walled = false;
+        BossSpecialAbility = 0;
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        BossCurrentHealth = BossMaxHealth;
+        BossAnimator = GetComponent<Animator>();
+        FulxAudio = GetComponent<AudioSource>();
+        Death = Resources.Load<AudioClip>("FulxDeath");
+        Roar = Resources.Load<AudioClip>("FulxRoar");
+        Damaged = Resources.Load<AudioClip>("FulxDamaged");
+        Rush = Resources.Load<AudioClip>("FulxRush");
+        Fin = Resources.Load<AudioClip>("FulxFin");
+        Charge = Resources.Load<AudioClip>("FulxCharge");
+    }
+
+    // Update is called once per frame..........................................................................................................................................
+    void Update()
+    {
+        float distanceFromPlayer = Vector2.Distance(player.position, transform.position);
+        float indistance = Vector2.Distance(player.position, transform.position);
+        if (BossCurrentHealth > 0)
+        {
+            if (BossCurrentHealth <= 1500 && Live == true)
+            {
+                DeathSign.transform.localScale = new Vector3(0.9769362f, 0.9769362f, 0.9769362f);
+            }
+            Live = true;
+        }
+        if (BossCurrentHealth <= 0)
+        {
+            Live = false;
+            DeathSign.transform.localScale = new Vector3(0, 0, 0);
+        }
+
+
+        if (Live == true)
+        {
+            if (distanceFromPlayer < AttackerOnFrontRadius)
+            {
+                Combat = true;
+            }
+            if (distanceFromPlayer < AttackerOnBackRadius)
+            {
+                Combat = true;
+            }
+            if (distanceFromPlayer < AboveOverHeadRadius)
+            {
+                Combat = true;
+            }
+
+            if (Combat == true)
+            {
+                if (player.position.x < Boss.transform.position.x)
+                {
+                    Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+                }
+                if (player.position.x > Boss.transform.position.x)
+                {
+                    Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+                }
+                else
+                {
+                    Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+                }
+            }
+            if (stun == true)
+            {
+                StartCoroutine(StuningOn());
+            }
+            if (Flamed == 1)
+            {
+                Flamed = 0;
+                StartCoroutine(FlamedOn());
+            }
+            if (Shocked == 1)
+            {
+                Shocked = 0;
+                StartCoroutine(ShockedOn());
+            }
+            if (Poisoned == 1)
+            {
+                Poisoned = 0;
+                StartCoroutine(PoisonedOn());
+            }
+            if (Iced == 1)
+            {
+                Iced = 0;
+                BossSpeed = 2;
+                StartCoroutine(IcedOn());
+            }
+
+            OnCheckWallSide();
+            if(Walled == false)
+            {
+                EOnCheckWallSide();
+            }
+            if (distanceFromPlayer < TrackRange)
+            {
+                if (Action == false)
+                {
+                    StartCoroutine(ActionTrue());
+                }
+
+            }
+            if (FireStatus.transform.localScale.x > 0)
+            {
+                BossCurrentHealth -= 2 * Time.deltaTime;
+            }
+            if (PoisonStatus.transform.localScale.x > 0)
+            {
+                BossCurrentHealth -= 5 * Time.deltaTime;
+            }
+
+            if (distanceFromPlayer > TrackRange)
+            {
+                Combat = false;
+                CombatCheckOn = 0;
+                Action = false;
+            }
+            if (Action == false && BossCheckOn == 0 && distanceFromPlayer > TrackRange)
+            {
+                BossCheckOn = 1;
+                if (MegaDamaged == false)
+                {
+                    BossAnimator.Play("FulxIdle");
+                    BossAnimator.SetBool("Walk", false);
+                    BossAnimator.SetBool("WoundWalk", false);
+
+                }
+
+                if (MegaDamaged == true && Megacount == 1)
+                {
+                    BossAnimator.SetBool("BossMega", true);
+                    BossAnimator.SetBool("Walk", false);
+                    BossAnimator.SetBool("WoundWalk", false);
+                }
+                StartCoroutine(OnIdle());
+            }
+            if (RushState == true && Walled == true && MegaDamaged == false)
+            {
+                MegaDamagingOn(Random.Range(1350, 1950));
+            }
+
+
+            if (Combat == false && RushState == false && player.position.y > Boss.transform.position.y && Walled == true)
+            {
+                StopAllCoroutines();
+
+                if (Boss.transform.localScale.x < 0)
+                {
+                    Action = false;
+                    Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+                    if (MegaDamaged == false)
+                    {
+                        BossAnimator.SetBool("Walk", true);
+                    }
+                    if (MegaDamaged == true)
+                    {
+                        BossAnimator.SetBool("Walk", false);
+                        BossAnimator.SetBool("WoundWalk", true);
+                    }
+
+                    Boss.velocity = new Vector2(-BossSpeed * 8, Boss.velocity.y);
+                    StopCoroutine(OnIdle());
+                    StopCoroutine(BossBehavior1());
+                    StopCoroutine(BossBehavior2());
+                    StopCoroutine(BossBehavior3());
+                    StopCoroutine(BossBehavior4());
+                    BossCheckOn = 0;
+                    BossBehaviorRandom = 0;
+                }
+                else
+                {
+                    Action = false;
+                    Boss.velocity = new Vector2(5 * 8, Boss.velocity.y);
+                    if (MegaDamaged == false)
+                    {
+                        BossAnimator.SetBool("Walk", true);
+                    }
+                    if (MegaDamaged == true)
+                    {
+                        BossAnimator.SetBool("Walk", false);
+                        BossAnimator.SetBool("WoundWalk", true);
+                    }
+                    Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+                    StopCoroutine(OnIdle());
+                    StopCoroutine(BossBehavior1());
+                    StopCoroutine(BossBehavior2());
+                    StopCoroutine(BossBehavior3());
+                    StopCoroutine(BossBehavior4());
+                    BossCheckOn = 0;
+                    BossBehaviorRandom = 0;
+
+                }
+            }
+            if (Action == true && Combat == false && RushState == true)
+            {
+                BossAnimator.SetBool("Walk", false);
+                BossAnimator.SetBool("WoundWalk", false);
+            }
+            if (Action == true && Combat == false && RushState == false)
+            {
+                if (MegaDamaged == false)
+                {
+                    BossAnimator.SetBool("Walk", true);
+                }
+
+                if (MegaDamaged == true)
+                {
+                    BossAnimator.SetBool("WoundWalk", true);
+                    BossAnimator.SetBool("Walk", false);
+                }
+                StopCoroutine(OnIdle());
+                StopCoroutine(BossBehavior1());
+                StopCoroutine(BossBehavior2());
+                StopCoroutine(BossBehavior3());
+                StopCoroutine(BossBehavior4());
+                BossCheckOn = 0;
+                BossBehaviorRandom = 0;
+
+                if (Combat == true && CombatCheckOn == 0)
+                {//BossAttack...............................................................................................................................................
+                    CombatCheckOn = 1;
+                    StopCoroutine(OnIdle());
+                    StopCoroutine(BossBehavior1());
+                    StopCoroutine(BossBehavior2());
+                    StopCoroutine(BossBehavior3());
+                    StopCoroutine(BossBehavior4());
+                    BossCheckOn = 0;
+                    BossBehaviorRandom = 0;
+                    StartCoroutine(CombatOn());
+                    BossAnimator.SetBool("Walk", false);
+                    BossAnimator.SetBool("WoundWalk", false);
+
+                }
+                while (RushState == true)
+                {
+                    Combat = false;
+                    BossAnimator.SetBool("Walk", false);
+                    BossAnimator.SetBool("WoundWalk", false);
+                }
+
+                if (Combat == false)
+                {
+                    //BossWalkOn.............................................................................................................................................
+                    if (indistance < CheckOnFlip)
+                    {
+                        if (Boss.transform.localScale.x > 0)
+                        {
+                            if (player.position.x > Boss.transform.position.x)
+                            {
+                                Boss.velocity = new Vector2(-BossSpeed * 6, Boss.velocity.y);
+                            }
+                            if (player.position.x < Boss.transform.position.x)
+                            {
+                                if (MegaDamaged == false)
+                                {
+                                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(RushPoint.position, RushPointRadius, PlayerLayer);
+                                    foreach (Collider2D Enemy in hitOn1)
+                                    {
+                                        Enemy.GetComponent<TestPlayer>().TakeDamaged(3);
+
+                                    }
+                                    BossAnimator.SetTrigger("Rush");
+
+                                }
+
+                                if (MegaDamaged == true)
+                                {
+                                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(RushPoint.position, RushPointRadius, PlayerLayer);
+                                    foreach (Collider2D Enemy in hitOn1)
+                                    {
+                                        Enemy.GetComponent<TestPlayer>().TakeDamaged(1);
+
+                                    }
+                                    BossAnimator.SetTrigger("WoundRush");
+                                    BossAnimator.SetBool("Walk", false);
+                                }
+                                RushState = true;
+                                BossCheckOn = 0;
+                                StartCoroutine(RushOn());
+                            }
+
+                        }
+                        if (Boss.transform.localScale.x < 0)
+                        {
+                            if (player.position.x > Boss.transform.position.x)
+                            {
+                                RushState = true;
+                                if (MegaDamaged == false)
+                                {
+                                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(RushPoint.position, RushPointRadius, PlayerLayer);
+                                    foreach (Collider2D Enemy in hitOn1)
+                                    {
+                                        Enemy.GetComponent<TestPlayer>().TakeDamaged(3);
+
+                                    }
+                                    BossAnimator.SetTrigger("Rush");
+
+                                }
+
+                                if (MegaDamaged == true)
+                                {
+                                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(RushPoint.position, RushPointRadius, PlayerLayer);
+                                    foreach (Collider2D Enemy in hitOn1)
+                                    {
+                                        Enemy.GetComponent<TestPlayer>().TakeDamaged(1);
+
+                                    }
+                                    BossAnimator.SetTrigger("WoundRush");
+                                    BossAnimator.SetBool("Walk", false);
+                                }
+
+                                StartCoroutine(RushOn());
+                            }
+                            if (player.position.x < Boss.transform.position.x)
+                            {
+                                Boss.velocity = new Vector2(BossSpeed, Boss.velocity.y);
+                                if (MegaDamaged == false)
+                                {
+                                    BossAnimator.SetBool("Walk", true);
+
+
+                                }
+
+                                if (MegaDamaged == true)
+                                {
+                                    BossAnimator.SetBool("WoundWalk", true);
+                                    BossAnimator.SetBool("Walk", false);
+                                }
+                            }
+                        }
+                    }
+                    if (indistance > CheckOnFlip && Walled == false)
+                    {
+                        if (player.position.x <= Boss.transform.position.x)
+                        {
+                            if (MegaDamaged == false)
+                            {
+
+                                BossAnimator.SetBool("Walk", true);
+                            }
+
+                            if (MegaDamaged == true)
+                            {
+                                BossAnimator.SetBool("WoundWalk", true);
+                                BossAnimator.SetBool("Walk", false);
+                            }
+                            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+                            transform.position = Vector2.MoveTowards(this.transform.position, player.position, BossSpeed * Time.deltaTime);
+                        }
+                        if (player.position.x >= Boss.transform.position.x)
+                        {
+                            if (MegaDamaged == false)
+                            {
+
+                                BossAnimator.SetBool("Walk", true);
+                            }
+
+                            if (MegaDamaged == true)
+                            {
+                                BossAnimator.SetBool("WoundWalk", true);
+                                BossAnimator.SetBool("Walk", false);
+                            }
+                            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+                            transform.position = Vector2.MoveTowards(this.transform.position, player.position, BossSpeed * Time.deltaTime);
+                        }
+                    }
+                }
+            }
+
+        }
+        if (Live == false)
+        {
+            if (BossCurrentHealth <= 0)
+            {
+                FulxAudio.PlayOneShot(Death);
+                DeathOnGoing();
+            }
+        }
+    }
+
+    public void OnCheckWallSide()
+    {
+        Collider2D collider = Physics2D.OverlapCircle(NoCombatRushWall.position, NOCombatRushWallRadius, GroundWallLayer);
+        if (collider != null)
+        {
+            Walled = true;
+        }
+        else
+        {
+            Walled = false;
+        }
+    }
+    public void EOnCheckWallSide()
+    {
+        Collider2D collider = Physics2D.OverlapCircle(NoCombatRushWall.position, NOCombatRushWallRadius, FloatWallLayer);
+        if (collider != null)
+        {
+            Walled = true;
+        }
+        else
+        {
+            Walled = false;
+        }
+    }
+
+    public void BehaviorOn()
+    {
+        //Behavior....................................................................................................................................................
+        switch (BossBehaviorRandom)
+        {
+            case 1:
+                StartCoroutine(BossBehavior1());
+                break;
+        }
+        switch (BossBehaviorRandom)
+        {
+            case 2:
+                StartCoroutine(BossBehavior2());
+                break;
+        }
+        switch (BossBehaviorRandom)
+        {
+            case 3:
+                StartCoroutine(BossBehavior3());
+                break;
+        }
+        switch (BossBehaviorRandom)
+        {
+            case 4:
+                StartCoroutine(BossBehavior4());
+                break;
+        }
+
+    }
+
+    public void CombatSystemOn()
+    {
+        if (BossCombatRandom < 20)
+        {
+            //SpiralStrike............................................................................................................................................
+            StartCoroutine(FireworkOn());
+            BossSpecialAbility += 1;
+        }
+        if (BossCombatRandom < 60 && BossCombatRandom > 19)
+        {
+            //Punch................................................................................................................................................
+            StartCoroutine(FinalCutter());
+            BossSpecialAbility += 1;
+        }
+        if (BossCombatRandom < 85 && BossCombatRandom > 59)
+        {
+            //Smash..................................................................................................................................................
+            StartCoroutine(SpiralStrike());
+            BossSpecialAbility += 1;
+        }
+        if (BossCombatRandom > 84)
+        {
+            //IceShard.............................................................................................................................................
+            StartCoroutine(Guard());
+            BossSpecialAbility += 1;
+        }
+    }
+
+    public void SpecialAbilityOn()
+    {
+        if (BossAbilityRandom <= 30)
+        {
+            //StoneThrow......................................................................................................................................................................
+            StartCoroutine(FullBlossom());
+            BossSpecialAbility = 0;
+        }
+        if (BossAbilityRandom < 80 && BossAbilityRandom > 30)
+        {
+            //Raijin....................................................................................................................................................................
+            StartCoroutine(FullBlossom());
+            BossSpecialAbility = 0;
+        }
+        if (BossAbilityRandom >= 80)
+        {
+            //IceShard..................................................................................................................................................................
+            StartCoroutine(Guard());
+            BossSpecialAbility = 0;
+        }
+    }
+
+    IEnumerator BossBehavior1()
+    {
+        if (BossBehaviorRandom == 1)
+        {
+            FulxAudio.PlayOneShot(Roar);
+            if (MegaDamaged == false)
+            {
+                BossAnimator.Play("FulxIdle");
+            }
+            if (MegaDamaged == true && Megacount == 1)
+            {
+                BossAnimator.SetBool("BossMega", true);
+            }
+            Boss.velocity = new Vector2(0, Boss.velocity.y);
+        }
+        yield return new WaitForSeconds(1f);
+        if (BossBehaviorRandom == 1)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+            }
+            Boss.velocity = new Vector2(6 * 2, 5);
+            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+        }
+    }
+
+    IEnumerator BossBehavior2()
+    {
+        if (BossBehaviorRandom == 2)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+            }
+            Boss.velocity = new Vector2(-BossSpeed * 3, -4);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 0.5257539f);
+        }
+        yield return new WaitForSeconds(3.5f);
+        if (BossBehaviorRandom == 2)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+            }
+            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+            Boss.velocity = new Vector2(BossSpeed * 4, Boss.velocity.y);
+        }
+    }
+
+    IEnumerator BossBehavior3()
+    {
+        if (BossBehaviorRandom == 3)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+            }
+            Boss.velocity = new Vector2(4 * 5, 3);
+            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+        }
+        yield return new WaitForSeconds(1.5f);
+        if (BossBehaviorRandom == 3)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+            }
+            Boss.velocity = new Vector2(-3 * 6, -6);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+        }
+        yield return new WaitForSeconds(1.5f);
+        if (BossBehaviorRandom == 3)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+            Boss.velocity = new Vector2(5 * 3, 4);
+            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+        }
+        yield return new WaitForSeconds(1.5f);
+        if (BossBehaviorRandom == 3)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+            Boss.velocity = new Vector2(-5 * 2, 5);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+        }
+    }
+
+    IEnumerator BossBehavior4()
+    {
+        if (BossBehaviorRandom == 4)
+        {
+            Boss.velocity = new Vector2(-3 * 5, -4);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+        }
+        yield return new WaitForSeconds(1f);
+        if (BossBehaviorRandom == 4)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+            Boss.velocity = new Vector2(-3 * 4, 2);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+        }
+        yield return new WaitForSeconds(1f);
+        if (BossBehaviorRandom == 4)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+            Boss.velocity = new Vector2(3 * 4, 3);
+            Boss.transform.localScale = new Vector3(-0.3f, 0.3f, 1);
+        }
+        yield return new WaitForSeconds(1f);
+        if (BossBehaviorRandom == 4)
+        {
+            if (MegaDamaged == false)
+            {
+
+                BossAnimator.SetBool("Walk", true);
+            }
+
+            if (MegaDamaged == true)
+            {
+                BossAnimator.SetBool("WoundWalk", true);
+
+            }
+            Boss.velocity = new Vector2(-3 * 4, -4);
+            Boss.transform.localScale = new Vector3(0.3f, 0.3f, 1);
+        }
+       
+    }
+
+    IEnumerator RushOn()
+    {
+        FulxAudio.PlayOneShot(Rush);
+        if (Boss.transform.localScale.x < 0)
+        {
+            Boss.velocity = new Vector2(BossSpeed * 17f, Boss.velocity.y);
+        }
+        if (Boss.transform.localScale.x > 0)
+        {
+            Boss.velocity = new Vector2(-BossSpeed * 17f, Boss.velocity.y);
+        }
+        yield return new WaitForSeconds(1f);
+        Action = false;
+        RushState = false;
+    }
+
+    IEnumerator ActionTrue()
+    {
+        yield return new WaitForSeconds(1);
+        Action = true;
+    }
+
+    IEnumerator OnIdle()
+    {
+        if (Action == false)
+        {
+            BossBehaviorRandom = Random.Range(1, 4);
+            BehaviorOn();
+            yield return new WaitForSeconds(5f);
+            BossCheckOn = 0;
+        }
+
+    }
+    //DamagedOnCouroutine................................................................................................................................................
+    IEnumerator MegaDamagedCouOn()
+    {
+        Boss.velocity = new Vector2(0, 0);
+        GameObject Real = Instantiate(Spear, SpearDrop.position, Quaternion.identity) as GameObject;
+        BossAnimator.SetTrigger("MegaDamaged");
+        yield return new WaitForSeconds(0.6f);
+        if (stun == true)
+        {
+            StartCoroutine(StuningOn());
+        }
+    }
+
+    IEnumerator StuningOn()
+    {
+        if (MegaDamaged == false && stun == true)
+        {
+            BossAnimator.SetTrigger("Stun");
+        }
+        if (MegaDamaged == true && stun == true)
+        {
+            BossAnimator.SetTrigger("WoundStun");
+        }
+        yield return new WaitForSeconds(0.8f);
+        stun = false;
+        Action = false;
+        Combat = false;
+        RushState = false;
+    }
+
+    //CombatCouroutine...................................................................................................................................................
+    IEnumerator CombatOn()
+    {
+        Boss.velocity = new Vector2(0, Boss.velocity.y);
+        if (BossSpecialAbility <= 3)
+        {
+            BossCombatRandom = Random.Range(0, 100);
+            CombatSystemOn();
+        }
+        if (BossSpecialAbility >= 4)
+        {
+            BossAbilityRandom = Random.Range(0, 100);
+            SpecialAbilityOn();
+        }
+        yield return new WaitForSeconds(4);
+        CombatCheckOn = 0;
+        Combat = false;
+    }
+
+    IEnumerator FireworkOn()
+    {
+        GuardOn = false;
+        Boss.velocity = new Vector2(0, 0);
+        if (MegaDamaged == false )
+        {
+            BossAnimator.SetTrigger("Blossom");
+            BossAnimator.SetBool("Walk", false);
+        }
+        if (MegaDamaged == true && Megacount == 1)
+        {
+            BossAnimator.SetTrigger("WoundBlossom");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        yield return new WaitForSeconds(0.5f);
+        Instantiate(Firework, InstantiateFirework1.position, Quaternion.identity);
+        Instantiate(Firework, InstantiateFirework2.position, Quaternion.identity);
+        Instantiate(Firework, InstantiateFirework3.position, Quaternion.identity);
+        //Instantiate
+
+    }
+
+    IEnumerator FullBlossom()
+    {
+        GuardOn = false;
+        FulxAudio.PlayOneShot(Roar);
+        if (MegaDamaged == false)
+        {
+            BossAnimator.SetTrigger("Blossom");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        if (MegaDamaged == true)
+        {
+            BossAnimator.SetTrigger("WoundBlossom");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        FulxAudio.PlayOneShot(Charge);
+        yield return new WaitForSeconds(0.1f);
+        Instantiate(RedCircleLine, InstantiateFinalBlast.position, Quaternion.identity);
+        yield return new WaitForSeconds(2);
+        //Instantiate
+        Instantiate(FinalBlast, InstantiateFinalBlast.position, Quaternion.identity);
+       
+
+
+    }
+
+    IEnumerator SpiralStrike()
+    {
+        GuardOn = false;
+        yield return new WaitForSeconds(0.1f);
+        //Player Damaged
+        if (MegaDamaged == false)
+        {
+            BossAnimator.SetTrigger("Spin");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        if (MegaDamaged == true && Megacount == 1)
+        {
+            BossAnimator.SetTrigger("WoundSpin");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(SpiralStrikePoint.position,SpiralStrikeRange, PlayerLayer);
+        foreach (Collider2D Enemy in hitOn1)
+        {
+            Enemy.GetComponent<TestPlayer>().TakeDamaged(Random.Range(72, 95));
+
+        }
+        if (Boss.transform.localScale.x < 0)
+        {
+            Boss.velocity = new Vector2(BossSpeed * 10f, Boss.velocity.y);
+        }
+        if (Boss.transform.localScale.x > 0)
+        {
+            Boss.velocity = new Vector2(-BossSpeed * 10f, Boss.velocity.y);
+        }
+        yield return new WaitForSeconds(1.7f);
+        //Player Damaged
+    }
+
+    IEnumerator FinalCutter()
+    {
+        GuardOn = false;
+        if (MegaDamaged == false)
+        {
+            BossAnimator.SetTrigger("Cutter");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        if (MegaDamaged == true)
+        {
+            BossAnimator.SetTrigger("WoundCutter");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        FulxAudio.PlayOneShot(Fin);
+        yield return new WaitForSeconds(1f);
+        Instantiate(Cutter1, CutterInstantiatePoint1.position, Quaternion.identity);
+        Instantiate(Cutter2, CutterInstantiatePoint2.position, Quaternion.identity);
+        Instantiate(Cutter3, CutterInstantiatePoint3.position, Quaternion.identity);
+        yield return new WaitForSeconds(1f);
+        //player Damaged
+    }
+
+    IEnumerator Guard()
+    {
+        if (MegaDamaged == false)
+        {
+            BossAnimator.SetTrigger("Guard");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        if (MegaDamaged == true)
+        {
+            BossAnimator.SetTrigger("WoundGuard");
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+        }
+        yield return new WaitForSeconds(0.8f);
+        GuardOn = true;
+        yield return new WaitForSeconds(2.5f);
+        GuardOn = false;
+    }
+    IEnumerator FlamedOn()
+    {
+        FireStatus.transform.localScale = new Vector3(1f, 1f);
+        yield return new WaitForSeconds(2f);
+        FireStatus.transform.localScale = new Vector3(0, 0);
+    }
+    IEnumerator IcedOn()
+    {
+        IceStatus.transform.localScale = new Vector3(1, 1);
+        yield return new WaitForSeconds(5f);
+        BossSpeed = 5;
+        IceStatus.transform.localScale = new Vector3(0, 0);
+    }
+    IEnumerator PoisonedOn()
+    {
+        GuardOn = false;
+        PoisonStatus.transform.localScale = new Vector3(1f, 1f);
+        yield return new WaitForSeconds(7f);
+        PoisonStatus.transform.localScale = new Vector3(0, 0);
+    }
+    IEnumerator ShockedOn()
+    {
+        ThunderStatus.transform.localScale = new Vector3(1f, 1f);
+        yield return new WaitForSeconds(3);
+        DamagingOn(18);
+        yield return new WaitForSeconds(1f);
+        ThunderStatus.transform.localScale = new Vector3(0, 0);
+    }
+
+    //Damagedtype......................................................................................................................................................
+
+    public void DamagingOn(float damaged)
+    {
+        if (BossCurrentHealth > 0)
+        {
+            if (GuardOn == false)
+            {
+                BossCurrentHealth -= damaged;
+                GameObject points = Instantiate(DamagedText, TextOut.position, Quaternion.identity) as GameObject;
+                points.transform.GetComponent<TextMeshPro>().text = damaged.ToString();
+                if (MegaDamaged == false && GuardOn == false)
+                {
+                    BossAnimator.SetTrigger("DamagedBM");
+                    BossAnimator.SetBool("Walk", false);
+                }
+                if (MegaDamaged == true && Megacount == 1 && GuardOn == false)
+                {
+                    BossAnimator.SetTrigger("DamagedAM");
+                    BossAnimator.SetBool("Walk", false);
+                    BossAnimator.SetBool("WoundWalk", false);
+
+                }
+                FulxAudio.PlayOneShot(Damaged);
+            }
+            if (GuardOn == true)
+            {
+                BossCurrentHealth += damaged;
+                GameObject points = Instantiate(HealText, TextOut.position, Quaternion.identity) as GameObject;
+                points.transform.GetComponent<TextMeshPro>().text = damaged.ToString();
+                
+            }
+
+            
+
+           
+        }
+        if (BossCurrentHealth <= 0)
+        {
+            FulxAudio.PlayOneShot(Death);
+            DeathOnGoing();
+        }
+    }
+
+    public void MegaDamagingOn(float damaged)
+    {
+        if (BossCurrentHealth > 0 && stun == false && Megacount == 0)
+        {
+            FulxAudio.PlayOneShot(Damaged);
+            Megacount = 1;
+            StopAllCoroutines();
+            GameObject points = Instantiate(DamagedText, TextOut.position, Quaternion.identity) as GameObject;
+            points.transform.GetComponent<TextMeshPro>().text = damaged.ToString();
+            BossCurrentHealth -= damaged;
+            MegaDamaged = true;
+            stun = true;
+            StartCoroutine(MegaDamagedCouOn());
+        }
+        if (BossCurrentHealth <= 0)
+        {
+            FulxAudio.PlayOneShot(Death);
+            DeathOnGoing();
+        }
+
+    }
+
+    public void DeathOnGoing()
+    {
+        if (DeathOnTime == 0)
+        {
+            DeathOnTime = 1;
+            StopAllCoroutines();
+            Player.GetComponent<TestPlayer>().LastScene = 1;
+            //Death.......................................................................................................................................................
+            Action = false;
+            Combat = false;
+            Walled = false;
+            RushState = false;
+            BossAnimator.SetBool("Walk", false);
+            BossAnimator.SetBool("WoundWalk", false);
+            BossAnimator.SetBool("DeathOn", true);
+            this.enabled = false;
+            Destroy(this.gameObject, 2f);
+        }
+
+    }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag == "Fall")
+        {
+            DamagingOn(Random.Range(12, 34));
+        }
+        if (collision.gameObject.tag == "Arrow")
+        {
+            DamagingOn(Random.Range(20, 35));
+        }
+        if (collision.gameObject.tag == "FireArrow")
+        {
+            Flamed = 1;
+            DamagingOn(Random.Range(12, 25));
+        }
+        if (collision.gameObject.tag == "ThunderArrow")
+        {
+            Shocked = 1;
+            DamagingOn(Random.Range(7, 70));
+        }
+        if (collision.gameObject.tag == "PoisonArrow")
+        {
+            Poisoned = 1;
+            DamagingOn(Random.Range(20, 30));
+        }
+        if (collision.gameObject.tag == "IceArrow")
+        {
+            Iced = 1;
+            DamagingOn(Random.Range(3, 5));
+        }
+    }
+    public void OnDrawGizmosSelected()
+    {
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(transform.position, TrackRange);
+        }
+        {
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(CenterChange.position, CheckOnFlip);
+        }
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(NoCombatRushWall.position, NOCombatRushWallRadius);
+        }
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(AttackkerOnFront.position, AttackerOnFrontRadius);
+        }
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(AttackerOnBack.position, AttackerOnBackRadius);
+        }
+
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(AboveOverHead.position, AboveOverHeadRadius);
+        }
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(RushPoint.position, RushPointRadius);
+        }
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(SpiralStrikePoint.position, SpiralStrikeRange);
+        }
+    }
+
+}
