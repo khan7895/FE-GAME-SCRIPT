@@ -1,0 +1,433 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
+
+public class TestPlayer1 : MonoBehaviour
+{
+    public HealthBar Health;
+    public TestIL BossScript;
+    public bool JumpState = false;
+    public bool WalkOnGround = false;
+    public float JumpForce = 12;
+    public Rigidbody2D Player;
+    public int FalseCount = 0;
+    public float checkGroundRadius = 0.11f;
+    public Transform GroundedChecker;
+    public LayerMask groundLayer;
+    public LayerMask enemylayer;
+    public LayerMask IceLayer;
+    public LayerMask MonsterHeadLayer;
+    public bool DustOn = false;
+    public float speed = 3f;
+    public float HorizontalMoveSide = 0f;
+    public int JumpStateCount = 0;
+    public float PlayerMaxHealth = 350;
+    public float PlayerCurrentHealth;
+    public bool Damaged = false;
+    public float DeathCount = 4;
+    public GameObject ReSpawnPoint;
+    public Animator PlayerAnimator;
+    public Rigidbody2D Boss;
+    public float DeathCountOn = 0;
+    public float KnifeCount = 0;
+    public Transform PunchingPoint;
+    public float PunchingRange = 0.7f;
+    public float NextAttack = 1f;
+    public float AttackRate = 1f;
+    public Transform KnifePoint;
+    public float KnifeRange = 0.5f;
+    public TMP_Text DeathCountUI;
+    public AudioSource PlayerWalkAudio;
+    public AudioSource PlayerAttack;
+    public static AudioClip Punching1, Punching2, Punching1Hit, Punching2Hit, Knife;
+    public bool Walk = true;
+    public float Poisoned =0;
+    public GameObject PoisonStatus;
+    public float TrapCount = 0;
+    public GameObject Trap;
+    public GameObject RightClickUI;
+    // Start is called before the first frame update
+    void Start()
+    {
+        JumpState = false;
+        Player = GetComponent<Rigidbody2D>();
+        PlayerAnimator.SetBool("Walk", false);
+        PlayerCurrentHealth = PlayerMaxHealth;
+        Health.SetMaxHealth(PlayerMaxHealth);
+
+        PlayerAttack = GetComponent<AudioSource>();
+        Punching1 = Resources.Load<AudioClip>("PlayerPunch1");
+        Punching2 = Resources.Load<AudioClip>("PlayerPunch2");
+        Punching1Hit = Resources.Load<AudioClip>("PlayerPunch1Hit");
+        Punching2Hit = Resources.Load<AudioClip>("PlayerPunch2Hit");
+        Knife = Resources.Load<AudioClip>("Knife");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (KnifeCount == 1)
+        {
+            RightClickUI.transform.localScale = new Vector3(1, 1, 1);
+        }
+        if (PlayerCurrentHealth >= PlayerMaxHealth)
+        {
+            PlayerCurrentHealth = PlayerMaxHealth;
+            PlayerAnimator.Play("PlayerIdle");
+        }
+        DeathCountUI.SetText(DeathCount.ToString());
+        if (PlayerCurrentHealth > 0)
+        {
+            if (TrapCount == 1)
+            {
+                if (Input.GetKeyDown(KeyCode.S))
+                {
+                    TrapCount = 0;
+                    Instantiate(Trap, GroundedChecker.position, Quaternion.identity);
+                }
+            }
+            if (PoisonStatus.transform.localScale.x > 0)
+            {
+                PlayerCurrentHealth -= 3 * Time.deltaTime;
+            }
+            if (Poisoned==1)
+            {
+                
+                StartCoroutine(PoisonedOn());
+            }
+            Health.SetHealth(PlayerCurrentHealth);
+            if (Input.GetMouseButtonDown(0))
+
+            {
+
+                if (NextAttack >= Time.time)
+                {
+
+                    PlayerAttack.PlayOneShot(Punching1);
+                    PlayerAnimator.SetTrigger("Punching1");
+                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(PunchingPoint.position, PunchingRange, enemylayer);
+                    foreach (Collider2D Enemy in hitOn1)
+                    {
+                        Enemy.GetComponent<TestIL>().DamagingOn(Random.Range(12, 18));
+                        PlayerAttack.PlayOneShot(Punching1Hit);
+                    }
+
+                    Collider2D[] hitOn2 = Physics2D.OverlapCircleAll(PunchingPoint.position, PunchingRange, MonsterHeadLayer);
+                    foreach (Collider2D Enemy in hitOn2)
+                    {
+                        Enemy.GetComponent<TestIL>().DamagingOn(Random.Range(17, 24));
+                        PlayerAttack.PlayOneShot(Punching1Hit);
+                    }
+
+
+                }
+
+
+                if (NextAttack < Time.time)
+                {
+
+                    PlayerAnimator.SetTrigger("Punching2");
+                    NextAttack = Time.time + AttackRate;
+                    Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(PunchingPoint.position, PunchingRange, enemylayer);
+                    foreach (Collider2D Enemy in hitOn1)
+                    {
+                        Enemy.GetComponent<TestIL>().DamagingOn(Random.Range(15, 20));
+                        PlayerAttack.PlayOneShot(Punching2Hit);
+                    }
+                    Collider2D[] hitOn2 = Physics2D.OverlapCircleAll(PunchingPoint.position, PunchingRange, MonsterHeadLayer);
+                    foreach (Collider2D Enemy in hitOn2)
+                    {
+                        Enemy.GetComponent<TestIL>().DamagingOn(Random.Range(23, 27));
+                        PlayerAttack.PlayOneShot(Punching2Hit);
+                    }
+                    PlayerAttack.PlayOneShot(Punching2);
+
+
+                }
+
+            }
+
+            if (WalkOnGround == true)
+            {
+                if (!PlayerWalkAudio.isPlaying)
+                {
+                    PlayerWalkAudio.Play();
+                }
+            }
+            else
+            {
+                PlayerWalkAudio.Stop();
+            }
+
+            if (Input.GetMouseButtonDown(1) && KnifeCount == 1)
+            {
+               
+                PlayerAnimator.SetTrigger("Knife");
+                PlayerAttack.PlayOneShot(Knife);
+                Collider2D[] hitOn1 = Physics2D.OverlapCircleAll(KnifePoint.position, KnifeRange, enemylayer);
+                foreach (Collider2D Enemy in hitOn1)
+                {
+                    Boss.GetComponent<TestIL>().DamagingOn(Random.Range(32, 44));
+                }
+                Collider2D[] hitOn2 = Physics2D.OverlapCircleAll(KnifePoint.position, KnifeRange, MonsterHeadLayer);
+                foreach (Collider2D Enemy in hitOn2)
+                {
+                    Boss.GetComponent<TestIL>().DamagingOn(Random.Range(48, 62));
+                }
+
+            }
+
+            PlayerCurrentHealth -= 1 * Time.deltaTime;
+            if (Damaged == true)
+            {
+                if (Player.transform.localScale.x > 0)
+                {
+                    Player.velocity = new Vector2(-10, -7);
+                }
+                else
+                {
+                    Player.velocity = new Vector2(10, 7);
+                }
+            }
+
+            if (Damaged == false && Walk == true)
+            {
+                HorizontalMoveSide = Input.GetAxisRaw("Horizontal") * speed;
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    PlayerCurrentHealth -= 2;
+                    CheckIfGrounded();
+                    if (JumpState == false)
+                    {
+                        CheckOnEnemy();
+                        CheckOnEnemyHead();
+                    }
+
+
+                    if (JumpState == true)
+                    {
+                        if (HorizontalMoveSide > 0)
+                        {
+                            JumpStateCount = 1;
+                            PlayerAnimator.SetTrigger("Jump");
+                            Player.velocity = new Vector2(Player.velocity.x, JumpForce);
+
+                            WalkOnGround = false;
+
+                        }
+                        if (HorizontalMoveSide < 0)
+                        {
+                            JumpStateCount = 1;
+                            PlayerAnimator.SetTrigger("Jump");
+                            Player.velocity = new Vector2(Player.velocity.x, JumpForce);
+
+                            WalkOnGround = false;
+
+                        }
+                        if (HorizontalMoveSide == 0)
+                        {
+                            JumpStateCount = 1;
+                            PlayerAnimator.SetTrigger("Jump");
+                            Player.velocity = new Vector2(0, JumpForce);
+
+                            WalkOnGround = false;
+
+                        }
+                        StartCoroutine(JumpOn());
+                    }
+
+                }
+                if (JumpState == false)
+                {
+                    if (DustOn == true)
+                    {
+                        StartCoroutine(DustOff());
+                    }
+                    if (DustOn == false)
+                    {
+                        Player.gravityScale = 8;
+                    }
+                }
+                if (JumpState == true)
+                {
+                    Player.gravityScale = 1;
+                }
+                if (HorizontalMoveSide > 0f)
+                {
+                    Player.velocity = new Vector2(3 * speed, Player.velocity.y);
+                    if (JumpStateCount == 0)
+                    {
+                        PlayerAnimator.SetBool("Walk", true);
+                        WalkOnGround = true;
+
+                    }
+                }
+                //Run Left Side
+                if (HorizontalMoveSide < 0f)
+                {
+                    Player.velocity = new Vector2(3 * -speed, Player.velocity.y);
+                    if (JumpStateCount == 0)
+                    {
+
+                        PlayerAnimator.SetBool("Walk", true);
+                        WalkOnGround = true;
+                    }
+                }
+                //Stop Player
+                if (HorizontalMoveSide == 0)
+                {
+
+                    Player.velocity = new Vector2(0, Player.velocity.y);
+                    PlayerAnimator.SetBool("Walk", false);
+                    WalkOnGround = false;
+                }
+
+                //Turn Face
+                {
+                    if (Input.GetKeyDown(KeyCode.A))
+                    {
+                        Player.transform.localScale = new Vector3(-0.1900796f, 0.1900796f, 1f);
+                    }
+                    if (Input.GetKeyDown(KeyCode.D))
+                    {
+                        Player.transform.localScale = new Vector3(0.1900796f, 0.1900796f, 1f);
+                    }
+
+                }
+            }
+        }
+
+        if (PlayerCurrentHealth <= 0 && DeathCountOn == 0 )
+        {
+            DeathCountOn = 1;
+            DeathCount -= 1;
+            PlayerAnimator.SetTrigger("Death");
+            StartCoroutine(DeathRespawn());
+
+            if (DeathCount <= 0)
+            {
+                StopAllCoroutines();
+                PlayerAnimator.SetBool("Walk", false);
+                PlayerAnimator.SetTrigger("Death");
+                StartCoroutine(LoadSceneOn());
+               
+            }
+
+        }
+
+    }
+
+    IEnumerator PauseWalk()
+    {
+        yield return new WaitForSeconds(0.8f);
+        Walk = true;
+    }
+    IEnumerator LoadSceneOn()
+    {
+        yield return new WaitForSeconds(3);
+        SceneManager.LoadScene("OpenScene");
+    }
+
+    IEnumerator DustOff()
+    {
+        Player.gravityScale = -0.2f;
+        yield return new WaitForSeconds(3);
+        DustOn = false;
+    }
+
+    IEnumerator PoisonedOn()
+    {
+        PoisonStatus.transform.localScale = new Vector3(0.5204124f, 0.5204124f, 1);
+        yield return new WaitForSeconds(5);
+        Poisoned = 0;
+        PoisonStatus.transform.localScale = new Vector3(0f, 0, 1);
+    }
+
+    IEnumerator JumpOn()
+    {
+
+        yield return new WaitForSeconds(0.55f);
+        JumpState = false;
+        JumpStateCount = 0;
+    }
+    IEnumerator DeathRespawn()
+    {
+        yield return new WaitForSeconds(2f);
+        Player.transform.position = ReSpawnPoint.transform.position;
+        PlayerCurrentHealth = PlayerMaxHealth;
+        DeathCountOn = 0;
+    }
+    public void TakeDamaged(float damage)
+    {
+        if (PlayerCurrentHealth > 0)
+        {
+            PlayerCurrentHealth -= damage;
+            Damaged = true;
+            StartCoroutine(TakeDamagedOn());
+        }
+
+    }
+
+    void CheckOnEnemyHead()
+    {
+        Collider2D collider = Physics2D.OverlapCircle(GroundedChecker.position, checkGroundRadius, MonsterHeadLayer);
+        if (collider != null)
+        {
+            JumpState = true;
+        }
+        else
+        {
+            JumpState = false;
+        }
+
+    }
+
+    void CheckOnEnemy()
+    {
+        Collider2D collider = Physics2D.OverlapCircle(GroundedChecker.position, checkGroundRadius, enemylayer);
+        if (collider != null)
+        {
+            JumpState = true;
+        }
+        else
+        {
+            JumpState = false;
+        }
+    }
+    void CheckIfGrounded()
+    {
+        Collider2D collider = Physics2D.OverlapCircle(GroundedChecker.position, checkGroundRadius, groundLayer);
+        if (collider != null)
+        {
+            JumpState = true;
+        }
+        else
+        {
+            JumpState = false;
+        }
+    }
+    private void OnDrawGizmosSelected()
+    {
+        {
+            Gizmos.color = Color.gray;
+            Gizmos.DrawWireSphere(GroundedChecker.position, checkGroundRadius);
+        }
+        {
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(PunchingPoint.position, PunchingRange);
+        }
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(KnifePoint.position, KnifeRange);
+        }
+    }
+    IEnumerator TakeDamagedOn()
+    {
+        PlayerAnimator.SetBool("Walk", false);
+        PlayerAnimator.SetTrigger("Damaged");
+        yield return new WaitForSeconds(0.5f);
+        Damaged = false;
+    }
+}
