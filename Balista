@@ -1,0 +1,107 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Balista : MonoBehaviour
+
+{
+    public ArrowCheck CheckArrow;
+    public GameObject ArrowCheckObject;
+    public Transform MainPoint;
+    public float MainRadius = 0.5f;
+    public Transform BowGun;
+    public LayerMask EnemyLayer;
+    public Vector2 direction;
+    public float LaunchForce = 1000;
+    public GameObject SIcon;
+    public Transform ShootPoint;
+    public float ArrowStock;
+    public float FireArrowStock;
+    public float PoisonArrowStock;
+    public float IceArrowStock;
+    public float ThunderArrowStock;
+    public GameObject Arrow;
+    public GameObject FireArrow;
+    public GameObject IceArrow;
+    public GameObject PoisonArrow;
+    public GameObject ThunderArrow;
+
+    void Update()
+    {
+        ArrowStock = ArrowCheckObject.GetComponent<ArrowCheck>().NArrow;
+        FireArrowStock = ArrowCheckObject.GetComponent<ArrowCheck>().FireArrow;
+        IceArrowStock = ArrowCheckObject.GetComponent<ArrowCheck>().IceArrow;
+        PoisonArrowStock = ArrowCheckObject.GetComponent<ArrowCheck>().PoisonArrow;
+        ThunderArrowStock = ArrowCheckObject.GetComponent<ArrowCheck>().ThunderArrow;
+        SIcon.transform.localScale = new Vector3(0,0,0);
+        Collider2D[] hitOn2 = Physics2D.OverlapCircleAll(MainPoint.position, MainRadius, EnemyLayer);
+        foreach (Collider2D Enemy in hitOn2)
+        {
+            SIcon.transform.localScale = new Vector3(0.6287731f, 0.6287731f,1);
+            Vector2 MousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 BowGunPosition = BowGun.position;
+            BowGun.right = direction;
+            direction = MousePosition - BowGunPosition;
+
+            if (Input.GetKeyDown(KeyCode.S))
+            {
+                ArrowShoot();
+               
+            }
+        }
+ 
+    }
+    public void ArrowShoot()
+    {
+        if (ArrowStock>0)
+        {
+            ArrowCheckObject.GetComponent<ArrowCheck>().NArrow -= 1;
+            GameObject ArrowInstantiate = Instantiate(Arrow, ShootPoint.position, BowGun.rotation);
+
+            ArrowInstantiate.GetComponent<Rigidbody2D>().AddForce(ShootPoint.right * LaunchForce);
+        }
+        if (FireArrowStock > 0)
+        {
+            ArrowCheckObject.GetComponent<ArrowCheck>().FireArrow -= 1;
+            GameObject FireArrowInstantiate = Instantiate(FireArrow, ShootPoint.position, BowGun.rotation);
+
+            FireArrowInstantiate.GetComponent<Rigidbody2D>().AddForce(ShootPoint.right * LaunchForce);
+        }
+        if (PoisonArrowStock > 0)
+        {
+            ArrowCheckObject.GetComponent<ArrowCheck>().PoisonArrow -= 1;
+            GameObject PoisonArrowInstantiate = Instantiate(PoisonArrow, ShootPoint.position, BowGun.rotation);
+
+            PoisonArrowInstantiate.GetComponent<Rigidbody2D>().AddForce(ShootPoint.right * LaunchForce);
+        }
+        if (IceArrowStock > 0)
+        {
+            ArrowCheckObject.GetComponent<ArrowCheck>().IceArrow -= 1;
+            GameObject IceArrowInstantiate = Instantiate(IceArrow, ShootPoint.position, BowGun.rotation);
+
+            IceArrowInstantiate.GetComponent<Rigidbody2D>().AddForce(ShootPoint.right * LaunchForce);
+        }
+        if (ThunderArrowStock > 0)
+        {
+            ArrowCheckObject.GetComponent<ArrowCheck>().ThunderArrow -= 1;
+            GameObject ThunderArrowInstantiate = Instantiate(ThunderArrow, ShootPoint.position, BowGun.rotation);
+
+            ThunderArrowInstantiate.GetComponent<Rigidbody2D>().AddForce(ShootPoint.right * LaunchForce);
+        }
+
+    }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag == "Enemy")
+        {
+            Destroy(this.gameObject);
+        }
+    }
+    private void OnDrawGizmosSelected()
+    {
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(this.transform.position, MainRadius);
+        }
+    }
+}
